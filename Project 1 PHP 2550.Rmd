@@ -191,6 +191,19 @@ ggplot(data = new_cum_data, aes(x = cum_smoke_preg, y = Predicted_Probabilities)
 
 ```
 
+```{r}
+
+#Find average composite score of follow up
+new_df$avg_smoke_follow<-rowSums(new_df[,c("smoke_exposure_6mo","smoke_exposure_12mo",
+                                           "smoke_exposure_2yr","smoke_exposure_3yr",
+                                           "smoke_exposure_4yr","smoke_exposure_5yr")]/6,
+                                  na.rm = T)
+new_df$avg_smoke_follow
+
+
+
+```
+
 
 
 ```{r}
