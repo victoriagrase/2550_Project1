@@ -140,14 +140,14 @@ summary(model)
 # Assuming mom_smoke_16wk is a numeric variable with values 0 and 1
 #new_df$smoke_16wk <- factor(new_df$mom_smoke_16wk, levels = c(0, 1), labels = c("No", "Yes"))
 
-
+#add in covariates in the model and see how it runs such as demographics
 
 # Create a new data frame for predictions
 new_data <- data.frame(mom_smoke_16wk = new_df$mom_smoke_16wk)
 
 # Predict probabilities using the model
 new_data$Predicted_Probabilities<- predict(model, newdata = new_data, type = "response")
-
+ #ets on sr
 
 # Create a plot for baseline and alcohol use predictions
 ggplot(data = new_data, aes(x = mom_smoke_16wk, y = Predicted_Probabilities)) +
@@ -168,14 +168,14 @@ new_df$cum_smoke_preg
 
 #fit new model using cumulative count with alcohol use 
 
-model_cum_smoke<- glm(alc_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
-summary(model_cum_smoke)
+model_cum_smoke_alc<- glm(alc_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
+summary(model_cum_smoke_alc)
 
 #create plot showing the probability predictions 
 new_cum_data <- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
 
 # Predict probabilities using the model
-new_cum_data$Predicted_Probabilities<- predict(model_cum_smoke, newdata = new_cum_data, type = "response")
+new_cum_data$Predicted_Probabilities<- predict(model_cum_smoke_alc, newdata = new_cum_data, type = "response")
 
 
 # Create a plot for baseline and alcohol use predictions
@@ -200,9 +200,378 @@ new_df$avg_smoke_follow<-rowSums(new_df[,c("smoke_exposure_6mo","smoke_exposure_
                                   na.rm = T)
 new_df$avg_smoke_follow
 
+```
+
+```{r}
+#fit new model using average of follow up scores with child's alcohol use 
+
+model_avg_smoke_alc<- glm(alc_ever ~ avg_smoke_follow, data = new_df, family = binomial(link = "logit"))
+summary(model_avg_smoke)
+
+#create plot showing the probability predictions 
+new_avg_follow<- data.frame(avg_smoke_follow = new_df$avg_smoke_follow)
+
+# Predict probabilities using the model
+new_avg_follow$Predicted_Prob_avg<- predict(model_avg_smoke_alc, newdata = new_avg_follow, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_avg_follow, aes(x = avg_smoke_follow, y = Predicted_Prob_avg)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Follow up Average",
+    y = "Predicted Probabilities of Child Alcohol Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+```
+
+```{r}
+
+#fit new model using cumulative count with alcohol use 
+
+model_cum_smoke_mj<- glm(mj_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
+summary(model_cum_smoke_mj)
+
+#create plot showing the probability predictions 
+new_cum_data_mj<- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
+
+# Predict probabilities using the model
+new_cum_data_mj$Predicted_Probabilities<- predict(model_cum_smoke_mj, newdata = new_cum_data_mj, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_cum_data_mj, aes(x = cum_smoke_preg, y = Predicted_Probabilities)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Cumulative",
+    y = "Predicted Probabilities of Child Marijuana Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+```
+
+
+---
+title: "R Code"
+output: html_document
+date: "2023-10-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r cars}
+
+#Load libraries and packages used for the EDA
+summary(cars)
+library(tidyverse)
+library(dplyr)
+library(kableExtra)
+library(gtsummary)
+library(ggplot2)
+library(naniar)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+
+#Upload new Dataframe and create a CSV for repository 
+new_df
+
+write.csv(new_df, "project1.csv", row.names=FALSE)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+#Ask about the 0 in num cigs and see if they are supposed to all of the NAs be 0  
+
+```{r}
+new_df[,c(22:28)]<-lapply(new_df[,c (22:28)],function(x) ifelse(x=="",NA,x))
+#new_df[c,22:28] <- lapply(new_df[,22:28], function(x) ifelse(x == "1=Yes", 1, x))
+#new_df[c,22:28] <- lapply(new_df[,22:28], function(x) ifelse(x == "2=No", 0, x))
+
+#Factor character variables in dataset
+new_df<-new_df %>%
+  mutate_if(is.character,factor)
+
+
+#head(new_df)
+```
+
+
+
+```{r}
+
+
+
+#Look at missing Data for each variable in study 
+overall_missing<-miss_var_summary(new_df)
+overall_missing
+
+#Look at missing data for each parent 
+pct_na_r <- rowSums(is.na(new_df)) / ncol(new_df) * 100
+row_na <- data.frame(parent_id = new_df$parent_id, pct_na = pct_na_r)
+row_na <- row_na[row_na$pct_na > 40,] # participants with greater than 40% missing
+print(row_na) 
+
+
+#missingness plot with percentages for pre and postpartum 
+
+post_pre_plot<-gg_miss_var(show_pct = TRUE, new_df %>%
+             select(mom_smoke_16wk:mom_smoke_pp6mo))
+post_pre_plot
+
+#Missingness plot with percentages for follow up
+
+follow_up_na_plot<-gg_miss_var(show_pct = TRUE, new_df %>%
+             select(smoke_exposure_6mo:smoke_exposure_5yr))
+follow_up_na_plot
+
+#Also keep on the lookout for the person who smoked 45,000 cigarettes a day they might need to be removed as well
+
+```
+
+
+AIM 1: Examine effects of SDP/ETS on adolescent self-regulation, substance use, and externalizing.
+```{r}
+
+#Look at self regulation variables which include bpm_att,bpm_ext,bpm_int,erq_cog,erq_exp
+
+
+#summarize 6 months (together) in comparison to followups in the 
+#eda for univaritates summary for plots
+
+```
+
+
+```{r}
+#look at substance use variables include: cig_ever,e_cig_ever,alc_ever,mj_ever
+tbl_cig_child<-new_df%>%
+  count(cig_ever)
+tbl_ecig_child<-new_df%>%
+  count(e_cig_ever)
+tbl_alc_child<-new_df%>%
+  count(alc_ever)
+tbl_mj_child<-new_df%>%
+  count(mj_ever)
+all_sub_counts<-bind_cols(tbl_mj_child,tbl_alc_child,tbl_ecig_child,tbl_cig_child)
+
+#all_sub_counts
+
+#Subset data for the number of substance use
+
+#Create a cumulative score of the smoking status while the mother was pregnant
+new_df$mom_smoke_16wk<-factor(new_df$mom_smoke_16wk)
+new_df$mom_smoke_22wk<-factor(new_df$mom_smoke_22wk)
+new_df$mom_smoke_32wk<-factor(new_df$mom_smoke_32wk)
+
+
+#For pre and post-partum create proportions table and evaluate the effects on if someone said yes to substances compared to each smoking status 
+
+model <- glm(alc_ever ~ mom_smoke_16wk, data = new_df, family = binomial(link = "logit"))
+
+# Summarize the logistic regression results
+summary(model)
+
+# Assuming mom_smoke_16wk is a numeric variable with values 0 and 1
+#new_df$smoke_16wk <- factor(new_df$mom_smoke_16wk, levels = c(0, 1), labels = c("No", "Yes"))
+
+#add in covariates in the model and see how it runs such as demographics
+
+# Create a new data frame for predictions
+new_data <- data.frame(mom_smoke_16wk = new_df$mom_smoke_16wk)
+
+# Predict probabilities using the model
+new_data$Predicted_Probabilities<- predict(model, newdata = new_data, type = "response")
+ #ets on sr
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_data, aes(x = mom_smoke_16wk, y = Predicted_Probabilities)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status at 16 weeks",
+    y = "Predicted Probabilities of Child Alcohol Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+
+
+#Find cumulative score of SDP
+new_df$cum_smoke_preg<-rowSums(new_df[,c("mom_smoke_16wk",
+                            "mom_smoke_22wk", 
+                            "mom_smoke_32wk")] == "1=Yes",
+                    na.rm = T)
+new_df$cum_smoke_preg
+
+#fit new model using cumulative count with alcohol use 
+
+model_cum_smoke_alc<- glm(alc_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
+summary(model_cum_smoke_alc)
+
+#create plot showing the probability predictions 
+new_cum_data <- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
+
+# Predict probabilities using the model
+new_cum_data$Predicted_Probabilities<- predict(model_cum_smoke_alc, newdata = new_cum_data, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_cum_data, aes(x = cum_smoke_preg, y = Predicted_Probabilities)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Cumulative",
+    y = "Predicted Probabilities of Child Alcohol Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+
 
 
 ```
+
+```{r}
+
+#Find average composite score of follow up
+new_df$avg_smoke_follow<-rowSums(new_df[,c("smoke_exposure_6mo","smoke_exposure_12mo",
+                                           "smoke_exposure_2yr","smoke_exposure_3yr",
+                                           "smoke_exposure_4yr","smoke_exposure_5yr")]/6,
+                                  na.rm = T)
+new_df$avg_smoke_follow
+
+```
+
+```{r}
+#fit new model using average of follow up scores with child's alcohol use 
+
+model_avg_smoke_alc<- glm(alc_ever ~ avg_smoke_follow, data = new_df, family = binomial(link = "logit"))
+summary(model_avg_smoke)
+
+#create plot showing the probability predictions 
+new_avg_follow<- data.frame(avg_smoke_follow = new_df$avg_smoke_follow)
+
+# Predict probabilities using the model
+new_avg_follow$Predicted_Prob_avg<- predict(model_avg_smoke_alc, newdata = new_avg_follow, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_avg_follow, aes(x = avg_smoke_follow, y = Predicted_Prob_avg)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Follow up Average",
+    y = "Predicted Probabilities of Child Alcohol Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+```
+
+```{r}
+#PRE-PARTUM SMOKING
+#fit new model using cumulative count with alcohol use 
+
+model_cum_smoke_mj<- glm(mj_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
+summary(model_cum_smoke_mj)
+
+#create plot showing the probability predictions 
+new_cum_data_mj<- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
+
+# Predict probabilities using the model
+new_cum_data_mj$Predicted_Probabilities<- predict(model_cum_smoke_mj, newdata = new_cum_data_mj, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_cum_data_mj, aes(x = cum_smoke_preg, y = Predicted_Probabilities)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Cumulative",
+    y = "Predicted Probabilities of Child Marijuana Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+
+
+```
+```{r}
+model_cum_smoke_ecig<- glm(e_cig_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
+summary(model_cum_smoke_ecig)
+
+#create plot showing the probability predictions 
+new_cum_data_ecig<- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
+
+# Predict probabilities using the model
+new_cum_data_ecig$Predicted_Probabilities<- predict(model_cum_smoke_mj, newdata = new_cum_data_ecig, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_cum_data_ecig, aes(x = cum_smoke_preg, y = Predicted_Probabilities)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Cumulative",
+    y = "Predicted Probabilities of Child E-cigarette Use",
+    title = "Logistic Regression Predicted Probabilities"
+  )
+```
+
+```{r}
+
+#fit new model using average of follow up scores with child's alcohol use 
+
+model_avg_smoke_ecig<- glm(e_cig_ever ~ avg_smoke_follow, data = new_df, family = binomial(link = "logit"))
+summary(model_avg_smoke_mj)
+
+#create plot showing the probability predictions 
+new_avg_follow_ecig<- data.frame(avg_smoke_follow = new_df$avg_smoke_follow)
+
+# Predict probabilities using the model
+new_avg_follow_ecig$Pre_Prob_avg_mj<- predict(model_avg_smoke_mj, newdata = new_avg_follow_ecig, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+ggplot(data = new_avg_follow_ecig, aes(x = avg_smoke_follow, y = Pre_Prob_avg_mj)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Follow up Average",
+    y = "Predicted Probabilities of Child E-Cigarretes Use",
+    title = "Logistic Regression Predicted Probabilities"
+
+)
+
+```
+
+```{r}
+
+# Ensure 'mom_smoke_16wk' column is a factor with a level for missing values
+new_df <- new_df %>%
+  mutate(mom_smoke_16wk = forcats::fct_na_value_to_level(mom_smoke_16wk))
+
+# Create the summary table
+summary_table <- 
+  new_df %>%
+  select(income, alc_ever, mom_smoke_16wk) %>%
+  tbl_summary(by = mom_smoke_16wk) %>%
+  add_p() %>%
+  add_n()
+
+
+```
+
+```{r}
+
+#look at externalizing variablesinclude:pmq_parental_knowledge,pmq_child_disclosure
+#,pmq_parental_solictitation,pmq_parental control
+
+```
+AIM 2: Explore links between self-regulation at baseline and substance and externalizing at 6- and 12-month follow-ups.
+
+
+AIM3: Identify self-regulation problems that mediate the link between SDP/ETS exposure and level of, and change in, SU and EXT severity over time.
 
 
 
