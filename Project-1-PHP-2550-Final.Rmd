@@ -441,9 +441,3 @@ Aim 2 involves investigating the connections between self-regulation measured at
 
 
 AIM3: Identify self-regulation problems that mediate the link between SDP/ETS exposure and level of, and change in, SU and EXT severity over time.
-
-
-\newpage
-
-```{r ref.label=labs,echo=TRUE,eval=FALSE}
-```

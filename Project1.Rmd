@@ -1,4 +1,9 @@
 ---
+output:
+  pdf_document: default
+  html_document: default
+---
+3---
 title: "Project 1 PHP 2550 Final"
 output:
   pdf_document: default
