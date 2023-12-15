@@ -1,34 +1,33 @@
 ---
-output:
-  pdf_document: default
-  html_document: default
----
-3---
-title: "Project 1 PHP 2550 Final"
+title: "Exploring Adolescent Outcomes: A Comprehensive Explanatory Data Analysis of Smoking During Pregnancy, Environmental Tobacco Smoke Exposure, and Self-Regulation"
 output:
   pdf_document: default
   html_document: default
 date: "2023-10-08"
+format: pdf
+always_allow_html: true
 ---
 
+## Abstract
+
+This study employs explanatory data analysis to scrutinize the interplay between smoking during pregnancy (SDP), environmental tobacco smoke (ETS) exposure, and various outcomes related to self-regulation, externalizing behavior, and substance use among adolescents. Explanatory data analysis serves as the methodological foundation, unraveling intricate relationships, patterns, and contributing factors to elucidate the obtained results. By employing a comprehensive approach, this study aims to achieve three primary objectives:
+
+Aim 1: Investigate the impact of SDP/ETS on adolescent self-regulation, substance use, and externalizing behavior.
+
+Aim 2: Explore the connections between baseline self-regulation and subsequent substance use and externalizing behavior at 6- and 12-month follow-ups.
+
+Aim 3: Identify self-regulation challenges acting as mediators in the relationship between SDP/ETS exposure and the severity, as well as the trajectory, of substance use and externalizing behavior over time.
+
+The study cohort comprises women recruited from a previous intervention study focused on smoke avoidance among low-income women (N=738) during pregnancy and immediate postpartum periods, aimed at reducing both smoking and ETS exposure. From this cohort, a subset of adolescents (N=100) and their mothers are randomly selected for inclusion in this investigation. Baseline data are available, and two longitudinal follow-up assessments occur at 6- and 12-month intervals post-baseline. This research provides a comprehensive exploration of the multifaceted relationships between prenatal tobacco exposure, adolescent outcomes, and self-regulation, contributing valuable insights to inform public health strategies and interventions. The prevalence of (SDP) and exposure to (ETS) is widespread and represents significant environmental factors impacting children. Such exposure during the early stages of development has been linked to an increased likelihood of externalizing behaviors in children, including conditions such as Attention-Deficit/Hyperactivity Disorder (ADHD), along with elevated rates of substance abuse issues.
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-knitr::opts_chunk$set(message = F)
-knitr::opts_chunk$set(warning = F)
-options(knitr.kable.NA = '')
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
 
 ```
 
-
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
 ```{r cars}
-summary(cars)
 # load the packages
 library(tidyverse)
 library(dplyr)
@@ -36,6 +35,13 @@ library(kableExtra)
 library(gtsummary)
 library(ggplot2)
 library(naniar)
+library(psych)
+library(mice)
+library(webshot2)
+library(webshot)
+library(GGally)
+library(tinytex)
+library(tableone)
 library(gridExtra)
 
 # load the data
@@ -43,21 +49,14 @@ new_df<- read.csv("C:/Users/VGSCHOOL/project1.csv")
 
 ```
 
-## Including Plots
+## Introduction
 
-You can also embed plots, for example:
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Smoking during pregnancy (SDP) and exposure to environmental tobacco smoke (ETS) stand out as prevalent and harmful environmental exposures for children. Early exposure to smoke is associated with heightened occurrences of externalizing behaviors, including Attention-Deficit/Hyperactivity Disorder (ADHD), and substance use problems, carrying significant public health implications. Moreover, early smoke exposure is linked to self-regulation issues, encompassing challenges in emotional regulation.
+
+The baseline data is filtered and partially pre-processed, resulting in 78 variables from 49 participants. This includes participant ID and demographic characteristics of the child and parent. The dataset encompasses self-reported smoking during pregnancy and postpartum, urine nicotine metabolite levels, emotional regulation results for parents and children, attention and externalizing problems, and current substance use. Smoking status is based on self-reports, with fewer lab results, representing Smoking During Pregnancy (SDP) and Environmental Tobacco Smoke (ETS) within a five year period after the child's birth.. The variables assessed in the study pertain to self-regulation, externalizing problems, and substance use for both parents and children.
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
-
-#Create NA values for missingness in smoking during pregnancy and post partum variables
-new_df[,c(22:28)]<-lapply(new_df[,c (22:28)],function(x) ifelse(x=="",NA,x))
-
 # factorize the categorical data
-new_df<-new_df %>%
-  mutate_if(is.character,factor)
-
 new_df[,c(3:13)]<- new_df[,c(3:13)] %>%
 mutate_if(is.numeric, factor) 
 
@@ -66,6 +65,29 @@ mutate_if(is.numeric, factor)
 
 new_df[,c(37:42)]<- new_df[,c(37:42)] %>%
 mutate_if(is.numeric, factor) 
+
+new_df <- new_df %>%
+mutate(mom_smoke_16wk = factor(case_when(mom_smoke_16wk=="1=Yes"~1,
+mom_smoke_16wk=="2=No"~0)),
+mom_smoke_22wk = factor(case_when(mom_smoke_22wk=="1=Yes"~1,
+mom_smoke_22wk=="2=No"~0)),
+mom_smoke_32wk = factor(case_when(mom_smoke_32wk=="1=Yes"~1,
+mom_smoke_32wk=="2=No"~0)),
+mom_smoke_pp1= factor(case_when(mom_smoke_pp1=="1=Yes"~1,
+mom_smoke_pp1=="2=No"~0)),
+mom_smoke_pp2= factor(case_when(mom_smoke_pp2=="1=Yes"~1,
+mom_smoke_pp2=="2=No"~0)),
+mom_smoke_pp12wk =factor(case_when(mom_smoke_pp12wk=="1=Yes"~1,
+mom_smoke_pp12wk=="2=No"~0)),
+mom_smoke_pp6mo = factor(case_when(mom_smoke_pp6mo=="1=Yes"~1,
+mom_smoke_pp6mo=="2=No"~0)))
+
+
+#Create NA values for missingness in smoking during pregnancy and post partum variables
+new_df[,c(22:28)]<-lapply(new_df[,c (22:28)],function(x) ifelse(x=="",NA,x))
+
+new_df[,c(22:28)]<- new_df[,c(22:28)] %>%
+mutate_if(is.integer, factor) 
 
 #Remove Outliers in Dataset in which we have viewed and change to standardize them with rest of data
 
@@ -101,21 +123,26 @@ new_df$num_e_cigs_30 <- ifelse(new_df$e_cig_ever == 0, 0, new_df$num_e_cigs_30)
 
 
 ```
-There are 78 variables from 49 participants representing the demographics, socioeconomic status, education, and score measurements from survey of parent and child focusing on externalizing, self-regulation, and substance use. The variables also included smoking status during pre and postpartum (SDP) and follow up measurements on Environmental tobacco smoke (ETS) within a five year period after the child's birth.
 
+### Pre-Processing
 
-First, I wanted to reformat the data to get rid of any outliers or missinginess that might create bias or skewed results. I first factored race, sex, education, income, and time to look at baseline characteristics.  I found that there is one row with mostly NA values for measurements so I proceeded to delete this row. Then,  I factored the time variables for smoking status at all time points. I continued checking the data for any outliers that may be included and they were multiple in the mom_numcig. I believed that there was an error in the data when it said a patient smokes 44,989 cigarettes in one day so I replaced the value with NA for missing so it wouldn't skew our results ,and changed two strings to integers "2 black and miles a day" and "none".I also added in NA values to  columns in the SDP time variables and changed the NA values to 0 if the child answered that they had never consumed a substance before to account for it  correctly in the missing data patterns in which will be conducted in the next step. In addition, I also changed the O values in swan_inattentive and swan_hyperactive to NA values as they were in the original dataset. 
+In the initial data reformatting process, a systematic approach was undertaken to address potential biases and skewed results. The baseline characteristics were analyzed by factoring race, sex, education, income, and time. Identification of a row with predominantly NA values led to its removal. Subsequently, the time variables for smoking status at all points were factored, with a focus on detecting and addressing outliers. An anomaly in the "mom_numcig" variable, specifically a reported value of 44,989 cigarettes in a single day, was deemed erroneous and replaced with an NA value to prevent skewing of results. String-to-integer conversions were applied to "2 black and miles a day" and "none." NA values were introduced to columns in the Smoking During Pregnancy (SDP) time variables, and NA values were set to 0 if the child reported never having consumed a substance. Additionally, "swan_inattentive" and "swan_hyperactive" values of 0 were replaced with NA values, aligning with the original dataset's representation.
+
 ```{r}
 overall_missing<-miss_var_summary(new_df)
-overall_missing
 
 
  #Look at missing data for each parent 
 pct_na_r <- rowSums(is.na(new_df)) / ncol(new_df) * 100
 row_na <- data.frame(parent_id = new_df$parent_id, pct_na = pct_na_r)
 row_na <- row_na[row_na$pct_na > 70,] 
-print(row_na) 
+knitr::kable(row_na, caption = "Table 1: Patients Missing", col.names = c("Patient ID", "% missing"))
 
+ 
+
+# table <- kable(row_na, format = "html", caption = "Parent ID with Percentage of Missing Values") %>%
+#   kable_styling(bootstrap_options = "striped", full_width = FALSE)
+# table
 #Remove row with baseline values missing
 row_to_remove <- 38 
 new_df <- new_df[-row_to_remove, ]
@@ -135,11 +162,16 @@ new_df$mom_smoke_pp1<- ifelse(new_df$mom_smoke_22wk == "1=Yes" &
 new_df$mom_smoke_pp1<-factor(new_df$mom_smoke_pp1)
 
 ```
-Second, we would like to look at missing data patterns in baseline characteristics, SDP time variables, ETS time variables,score responses from survey, and across patients in general. There was an extraordinary amount of missing data all across the dataset but the highest variables of missingnesss were mom_smoke_pp1(79.59)% , childasd (57.14%), and mom_smoke_pp2(40.81%). The other smoking time variables for SDP and ETS all had missing percentages ranging from 22.45% to 14.29%. Furthermore,considering the cumulative nature of cigarette smoking and the nicotine addictive, I addressed this data gap by making the following assumptions. I assumed that if a parent's smoking behavior was known at 16 and 22 weeks, this behavior would remain consistent at 32 weeks (consistency of the addictive drug). Similarly, if we had information on a parent's smoking behavior at 22 and 32 weeks, as well as at postpartum visit 2, we assumed that this behavior would continue into postpartum visit 1. Although since there was a lot of missing data with the postpartum visits 1 & 2 and its not an accurate time point in which these visits occurred (such as 12weeks and 6 months ) in the timeline so I have excluded them from my  analysis when referring to post-partum smoking status and only focus on mom_smoke_pp12wk and mom_smoke_pp6mo which both have more complete data and time points for measurement.
 
-The parental knowledge questions answered by the child had yielded high percentages of missingness around 28.5% to 26.5% and an assumption of lack of knowledge due to perspective of not being a parent/adult could account for these percentages. However, it's important to note that we refrained from making assumptions about environmental tobacco smoke (ETS) exposure variables, as they were subject to more frequent fluctuations compared to parental smoking behavior.
+### Missing Data Processing
 
-You can see across patients that there are 9 patients with missing data over 70%!!! Usually if we had a larger dataset we would probably remove all 9 patients but due to us having 49 patients I have decided to keep 8 out of 9 for the analysis. I have removed parent id 53902 because it has missingness in the baseline for SDP(mom_smoke_16wk). If a patient doesn't have baseline measurements it can cause a multitude of problems including bias, reduced statistical power, inaccurate estimates, and more. To avoid this you can use imputation or perform a sensitivity analysis but I believed it would just be best to do a complete case analysis. Below I have created tables showing the reformatted data and the baseline characteristics mean values, count, and missing values count. 
+In the subsequent phase, an examination of missing data patterns was conducted across various variables, including baseline characteristics, Smoking During Pregnancy (SDP) and Environmental Tobacco Smoke (ETS) time variables, survey score responses, and overall patient data. Remarkably high percentages of missingness were identified, notably in variables such as "mom_smoke_pp1" (79.59%), "childasd" (57.14%), and "mom_smoke_pp2" (40.81%). Smoking time variables for SDP and ETS exhibited missing percentages ranging from 22.45% to 14.29%. Addressing the cumulative nature of cigarette smoking and nicotine addiction, assumptions were made to fill data gaps. Consistency in smoking behavior was assumed across specific time points, providing a basis for imputations.
+
+Notably, postpartum visits 1 & 2 were excluded from the analysis due to substantial missing data and uncertainty about their precise timing in the timeline. Imputation or sensitivity analysis options were considered but deemed less appropriate than a complete case analysis.
+
+The parental knowledge questions answered by the child exhibited high percentages of missingness (around 28.5% to 26.5%), potentially attributed to the perspective of not being a parent/adult. It is crucial to emphasize that assumptions were avoided for Environmental Tobacco Smoke (ETS) exposure variables, given their more fluctuating nature compared to parental smoking behavior.
+
+The patient-wise analysis revealed nine cases with missing data exceeding 70% whcih can be seen in Table 1. While a larger dataset might warrant the removal of such cases, the decision was made to retain eight out of nine patients due to the dataset's limited size. The exclusion of one patient (ID 53902) lacking baseline measurements, particularly in SDP (mom_smoke_16wk), aimed to mitigate potential issues like bias, reduced statistical power, and inaccurate estimates. The approach chosen prioritizes a complete case analysis, ensuring robustness in the subsequent analyses.
 
 ```{r}
 table1_SDP<-new_df %>% select(mom_smoke_16wk,mom_smoke_22wk, mom_smoke_32wk) %>%
@@ -164,40 +196,118 @@ knitr::kable(caption = "Table 3:Summary of ETS",
 
 col.names = c("Smoking Follow-Up characteristics","#")) 
 table_ETS
-
-
 ```
 
 
+The absence of any complete entries in this dataset underscores a pervasive issue of data incompleteness, where each record is afflicted by missing values. This deficiency is particularly notable in the case of 8 records, each exhibiting the absence of at least 50 variables. The extensive nature of these missing data points poses a considerable challenge in conducting a thorough analysis and obtaining accurate estimates.
+Ultimately, the identified issue is not merely a technical inconvenience but a fundamental concern for data quality. Recognizing this as part of a broader data quality problem is imperative, prompting a reassessment of data collection methodologies, potential biases, and strategies for addressing missing data.
 
+#Univariate Relationships
+We look at Tables 4,5 and 6 which gives us a peek into the summary statistics for the self-regulation and externalizing factors. I also have included a table (Table 7) of descriptive statistics reflecting the demographic of the parents offer insights into the central tendency and variability of SDP and ETS, aiding in summarizing and describing the characteristics of the variables.
+```{r}
+table4_contimean<-new_df %>% select(cotimean_34wk,cotimean_pp6mo_baby,cotimean_pp6mo) %>%
+tbl_summary(missing_text = "Missing") %>%
+knitr::kable(caption = "Table 4:Summary of Cotimean",
+
+col.names = c("Cotimean characteristics","#")) 
+table4_contimean
+
+table5_erq<-new_df %>% select(erq_cog_a,erq_exp_a,erq_cog,erq_exp) %>%
+tbl_summary(missing_text = "Missing") %>%
+knitr::kable(caption = "Table 4:Summary of Self-Regulation",
+
+col.names = c("Self-Regulation characteristics","#")) 
+table5_erq
+
+table6_ext<-new_df %>% select(bpm_att_p,bpm_ext_a,bpm_int_a,bpm_att_p,bpm_ext_p,bpm_int_p,swan_inattentive,swan_hyperactive) %>%
+tbl_summary(missing_text = "Missing") %>%
+knitr::kable(caption = "Table 6:Summary of Externalizing",
+
+col.names = c("Externalizing characteristics","#")) 
+table6_ext
+
+
+kableone(CreateTableOne(data=new_df,vars=names(new_df)[c(2:14,52:61)])) %>%
+kable_styling(full_width=T, font_size=12,latex_options = c('HOLD_position'))
+```
 
 ```{r}
-#Find average composite score of follow up
-new_df$avg_smoke_follow<-((rowSums(new_df[,c("smoke_exposure_6mo","smoke_exposure_12mo")] ==1,
-                                    na.rm=T))/2
-                           +(rowSums(new_df[,c("smoke_exposure_2yr","smoke_exposure_3yr",
-                                               "smoke_exposure_4yr","smoke_exposure_5yr")] ==1,
-                                           na.rm= T)))/5
+new_df$SDP <- factor(ifelse(new_df$mom_smoke_16wk==1 |
+new_df$mom_smoke_22wk==1 |
+new_df$mom_smoke_32wk==1,1,0))
+new_df <- new_df %>%
+mutate(cum_smoke_preg=as.numeric(as.character(mom_smoke_16wk))+
+as.numeric(as.character(mom_smoke_22wk))+
+as.numeric(as.character(mom_smoke_32wk)))
+# revise the smoke exposure variable by leverage the other variable's information
+new_df$smoke_exposure_immediate<- factor(ifelse(new_df$smoke_exposure_6mo==1|
+new_df$mom_smoke_pp12wk==1|new_df$mom_smoke_pp6mo==1|
+new_df$cotimean_pp6mo >10 | new_df$cotimean_pp6mo_baby>10,1,0))
+# smoke exposure intensity 
+new_df <- new_df %>%
+mutate(avg_smoke_follow=as.numeric(as.character(new_df$smoke_exposure_immediate))+
+as.numeric(as.character(new_df$smoke_exposure_12mo))+
+as.numeric(as.character(new_df$smoke_exposure_2yr))+
+as.numeric(as.character(new_df$smoke_exposure_3yr))+
+as.numeric(as.character(new_df$smoke_exposure_4yr))+as.numeric(as.character(new_df$smoke_exposure_5yr)))
 
-new_df$cum_smoke_pp<-(rowSums(new_df[,c("mom_smoke_pp12wk","mom_smoke_pp6mo")]=="1=Yes",na.rm=T))
-
-#Find cumulative score of SDP
-new_df$cum_smoke_preg<-rowSums(new_df[,c("mom_smoke_16wk",
-                            "mom_smoke_22wk", 
-                            "mom_smoke_32wk")] == "1=Yes", na.rm = T)
 ```
 
-Next, I created composite scores for the SDP and post-partum smoking and average scores for follow up ETS smoking variables to simplify the data since they are measuring the same attribute of smoking status during these different points.  
+After the initial data transformation, the generation of composite scores aimed to streamline the representation of smoking variables. The "cum_smoke_preg" variable was introduced to amalgamate smoking occurrences during pregnancy, summing instances at 16, 22, and 32 weeks. Additionally, the "avg_smoke_follow" variable calculated the average of smoking exposures during follow-ups at 6 months, 12 months, 2 years, 3 years, 4 years, and 5 years. To enhance the smoke exposure variable, the code leveraged information from other relevant variables. The "smoke_exposure_immediate" variable, for instance, was revised based on information from "smoke_exposure_6mo," "mom_smoke_pp12wk," "mom_smoke_pp6mo," "cotimean_pp6mo," and "cotimean_pp6mo_baby," resulting in a more refined representation of smoking exposure. These adjusted and newly created variables contribute to a more nuanced and informative analysis of smoking-related patterns across different time points.
+```{r}
+# Assuming your data frame is named 'new_df'
 
-TIME TO ADDRESS THE AIMS:
-AIM 1: Examine effects of SDP/ETS on adolescent self-regulation, substance use, and externalizing.
+library(corrplot)
 
+# Select relevant variables
+smoking_variables <- new_df[, c("cum_smoke_preg", "avg_smoke_follow")]
+
+# Check for missing values and remove them if necessary
+smoking_variables <- na.omit(smoking_variables)
+
+# Calculate correlation
+correlation <- cor(smoking_variables)
+
+# Print the correlation matrix
+#print(correlation)
+```
+The correlation results indicate a moderately positive relationship between "cum_smoke_preg" (cumulative smoking during pregnancy) and "avg_smoke_follow" (average smoking exposure during follow-ups) with a correlation coefficient of approximately 0.48. This suggests that individuals who reported higher cumulative smoking during pregnancy also tended to exhibit higher average smoking exposure during subsequent follow-up periods. However, the correlation is not exceptionally strong, indicating that other factors may contribute to smoking behaviors during pregnancy and follow-up periods. It must also be noted that the follow up smoke doesn't strictly just focus on the smoking status of the mother but everyone in the household as well.
+
+## Bivariate Relationships
+```{r}
+plt1<-ggpairs(new_df %>% select(cum_smoke_preg,avg_smoke_follow,alc_ever,mj_ever,cig_ever)%>%na.omit(),
+lower = list(continuous = wrap("smooth", alpha = 0.7, size=0.5)))+
+theme_bw()
+plt1
+
+plt2<-ggpairs(new_df %>% select(cum_smoke_preg,avg_smoke_follow,erq_cog,erq_exp)%>%na.omit(),
+lower = list(continuous = wrap("smooth", alpha = 0.7, size=0.5)))+
+theme_bw()
+plt2
+
+plt3<-ggpairs(new_df %>% select(cum_smoke_preg,avg_smoke_follow,swan_inattentive,swan_hyperactive)%>%na.omit(),
+lower = list(continuous = wrap("smooth", alpha = 0.7, size=0.5)))+
+theme_bw()
+plt3
+
+plt4<-ggpairs(new_df %>% select(cum_smoke_preg,avg_smoke_follow,bpm_att_a,bpm_ext_a,bpm_int_a)%>%na.omit(),
+lower = list(continuous = wrap("smooth", alpha = 0.7, size=0.5)))+
+theme_bw()
+plt4
+```
+The GGally package provides a powerful tool for analyzing bivariate relationships through its scatterplot matrix and correlation coefficients. When examining the intricate connections between Smoke During Pregnancy (SDP) and Environmental Tobacco Smoke (ETS) exposure with subsequent outcomes, such as substance use, externalizing factors, and self-regulation, several noteworthy patterns emerge. Notably, ETS demonstrates a negative relationship with substance use in children, indicating that those exposed to environmental tobacco smoke after birth are less likely to engage in substance use as teenagers. Conversely, SDP exhibits a positive relationship with a child's substance use, suggesting a potential association between prenatal smoke exposure and increased likelihood of substance use in adolescence. 
+
+In examining the relationship between Smoke During Pregnancy (SDP) and Environmental Tobacco Smoke (ETS) exposure and their impact on self-regulation, specifically in the cognitive and expressive domains, interesting patterns emerge. Surprisingly, the cognitive aspect of self-regulation does not display a substantial correlation with either SDP or ETS, suggesting that these maternal smoking factors might not significantly influence this particular facet of self-regulation.
+
+On the other hand, the expressive dimension of self-regulation demonstrates a moderately strong correlation with ETS, registering at 0.415. This finding implies that children exposed to environmental tobacco smoke after birth may experience a slightly heightened suppression in expressing their emotions. However, it's essential to note that the correlation, while statistically significant, is not exceptionally robust. This suggests that while ETS may contribute to a child's reluctance to express emotions, other factors could play a role in shaping the complexity of these emotional dynamics within the household environment. Exploring these nuances is crucial for a more comprehensive understanding of the various influences on children's self-regulation processes.
+
+In the examination of Environmental Tobacco Smoke (ETS) exposure, the correlation analysis reveals minimal associations with the SWAN (Strengths and Weaknesses of ADHD Symptoms and Normal Behavior) variables of inattentiveness and hyperactivity. The correlation estimates for ETS with SWAN inattentive and hyperactive variables are 0.015 and -0.024, respectively, indicating virtually no substantial correlation. Similarly, when scrutinizing Smoke During Pregnancy (SDP), there is only limited correlation observed with the SWAN variables. The correlation estimates for SDP with SWAN inattentive and hyperactive variables are 0.129 and 0.345, respectively, signifying modest correlations. These findings suggest that neither ETS nor SDP is significantly linked to the inattentive and hyperactive behaviors assessed by the SWAN scale in the study population.
+
+Lastly the examination of Environmental Tobacco Smoke (ETS) exposure, the correlation analysis reveals minimal associations with the Brief Problem Monitor variables. The correlation estimates for ETS with BPM variables are 0.098,0.008, and 0.004 respectively, indicating virtually no substantial correlation. Similarly, when scrutinizing Smoke During Pregnancy (SDP), there is only limited correlation observed with the BPM variables. The correlation estimates for SDP  with BPM variables are 0.169,0.295, and 0.309, respectively, signifying some modest correlations. These findings suggest that neither ETS nor SDP is significantly linked to the BPM behaviors in the study population.
 ```{r}
 #fit new model using cumulative count with alcohol use 
-
-
 model_cum_smoke_alc<- glm(alc_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
-summary(model_cum_smoke_alc)
+#summary(model_cum_smoke_alc)
 
 #create plot showing the probability predictions 
 new_cum_data <- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
@@ -214,12 +324,31 @@ alc_plot<-ggplot(data = new_cum_data, aes(x = cum_smoke_preg, y = Predicted_Prob
     y = "Predicted Probabilities of Child Alcohol Use",
     title = "Graph 1: Logistic Regression Predicted Probabilities"
   )
+
+model_follow_smoke_alc<- glm(alc_ever ~ avg_smoke_follow, data = new_df, family = binomial(link = "logit"))
+#summary(model_follow_smoke_alc)
+
+#create plot showing the probability predictions 
+new_cum_data_fol<- data.frame(avg_smoke_follow = new_df$avg_smoke_follow)
+
+# Predict probabilities using the model
+new_cum_data_fol$Predicted_Probabilities<- predict(model_follow_smoke_alc, newdata = new_cum_data_fol, type = "response")
+
+
+# Create a plot for baseline and alcohol use predictions
+alc_plot1<-ggplot(data = new_cum_data_fol, aes(x = avg_smoke_follow, y = Predicted_Probabilities)) +
+  geom_line() +
+  labs(
+    x = "Maternal Smoking Status Cumulative",
+    y = "Predicted Probabilities of Child Alcohol Use",
+    title = "Graph 1: Logistic Regression Predicted Probabilities"
+  )
 ```
 
 ```{r}
 #fit new model using cumulative count with marijuana use 
 model_cum_smoke_mj<- glm(mj_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
-summary(model_cum_smoke_mj)
+#summary(model_cum_smoke_mj)
 
 #create plot showing the probability predictions 
 new_cum_data_mj<- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
@@ -241,7 +370,7 @@ mj_plot<-ggplot(data = new_cum_data_mj, aes(x = cum_smoke_preg, y = Predicted_Pr
 ```{r}
 #fit new model using cumulative count with ecig use 
 model_cum_smoke_ecig<- glm(e_cig_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
-summary(model_cum_smoke_ecig)
+#summary(model_cum_smoke_ecig)
 
 #create plot showing the probability predictions 
 new_cum_data_ecig<- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
@@ -261,7 +390,7 @@ ecig_plot<-ggplot(data = new_cum_data_ecig, aes(x = cum_smoke_preg, y = Predicte
 #fit new model using cumulative count with cigarette use 
 
 model_cum_smoke_cig<- glm(cig_ever ~ cum_smoke_preg, data = new_df, family = binomial(link = "logit"))
-summary(model_cum_smoke_cig)
+#summary(model_cum_smoke_cig)
 
 #create plot showing the probability predictions 
 new_cum_data_cig<- data.frame(cum_smoke_preg = new_df$cum_smoke_preg)
@@ -278,12 +407,12 @@ cig_plot<-ggplot(data = new_cum_data_cig, aes(x = cum_smoke_preg, y = Predicted_
     y = "Predicted Probabilities of Child cigarette Use",
     title = "Graph 4: Logistic Regression Predicted Probabilities"
 )
-grid.arrange(alc_plot, mj_plot, ecig_plot, heights = c(4,4,4))
 ```
 
-First, I looked at the effects of SPD/ ETS on substance use in adolescents.I decided to look at the SDP and substance use effects using a GLM model because the presence of outliers or data that does not conform to normality assumptions. Also, GLMs allow for the modeling of nonlinear relationships between predictor variables and the response, making them versatile in capturing complex associations in the data. We see in the GLM models for SDP that for mj_ever,alc_ever, and ecig_ever that the baseline risk, was statistically significant (p = 0.00124,p=0.000472, p=0.000595 ), indicating that the likelihood of the three variables was significantly different from zero when no other predictor variables were considered. However, the cumulative score of SDP shows to possibly not be significant on substance use for children. The intercept was not significant for cig_ever.
+Next, a GLM model was also chosen due to the presence of outliers and non-normality assumptions in the data, as GLMs are suitable for capturing nonlinear relationships between predictors and responses. GLM models were applied to the Smoke During Pregnancy (SDP) variables, revealing that for mj_ever, alc_ever, and ecig_ever, the baseline risk was statistically significant (p = 0.00124, p = 0.000472, p = 0.000595), indicating significant differences from zero when considering no other predictors. However, the cumulative score of SDP does not appear to be significant in predicting substance use in children. The intercept for cig_ever was not statistically significant.
 
-So for next steps I think it would best and more appropriate to look at effects through summary tables instead of GLMs because the statistics can help you identify potential issues, such as skewness, outliers, or heteroscedasticity,to examine the assumptions underlying those models more before applying it. With making this next transition I evaluated the ETS follow-up on substance use on adolescents.
+For the subsequent analysis, it is deemed more appropriate to explore effects through summary tables rather than GLMs. Utilizing summary statistics aids in identifying potential issues, such as skewness, outliers, or heteroscedasticity, and allows for a thorough examination of assumptions before applying complex models. This approach was adopted in the evaluation of the Environmental Tobacco Smoke (ETS) follow-up on substance use in adolescents.
+
 ```{r}
 new_df %>% select(avg_smoke_follow, alc_ever, cig_ever, e_cig_ever,
 
@@ -297,10 +426,12 @@ digits = list(c(alc_ever, cig_ever, e_cig_ever,mj_ever, num_cigs_30, num_e_cigs_
 add_p(all_categorical () ~ "chisq.test", pvalue_fun = ~ style_pvalue(.x, digits = 2))
 
 ```
-This summary table displays the effects of the average follow up ETS on the substance use variables. We see that none of the variables alc-ever,cig_ever, e_cig_ever, mj_ever, num_cigs_30, num_e_cigs_30, num_mj_30, num_alc_30, for the children showed any statistical significance with the exposed tobacco smoke in their early years of childhood. We can see that there is a lot of missingness once again and that most people have an average score of 0 for the follow-up. There was a lot of variation in the the data 
+
+This summary table displays the effects of the average follow up ETS on the substance use variables. We see that none of the variables alc-ever,cig_ever, e_cig_ever, mj_ever, num_cigs_30, num_e_cigs_30, num_mj_30, num_alc_30, for the children showed any statistical significance with the environmental  tobacco smoke in their early years of childhood. We can see that there is a lot of missingness once again and that most people have an average score of 0 for the follow-up. There was a lot of variation in the the data.
+
 ```{r}
 #stratified by cum SDP
-tbl1_swan<- new_df[,c(32,33,81)] %>%
+tbl1_swan<- new_df[,c(32,33,80)] %>%
   tbl_summary(by = cum_smoke_preg) %>%
   add_p() %>%
   sort_p() %>%
@@ -309,7 +440,7 @@ as_kable_extra(tbl1_swan)%>%
   kable_styling(full_width=T, latex_options = c('HOLD_position'))
 
 
-tbl1_erq<- new_df[,c(73,74,81)] %>%
+tbl1_erq<- new_df[,c(73,74,80)] %>%
   tbl_summary(by = cum_smoke_preg) %>%
   add_p() %>%
   sort_p() %>%
@@ -331,70 +462,30 @@ digits = list(c(bpm_att, bpm_ext, bpm_int,
 bpm_att_p, bpm_ext_p, bpm_int_p) ~ c(2, 2))) %>%
 add_p(all_categorical () ~ "chisq.test", pvalue_fun = ~ style_pvalue(.x, digits = 2))
 ```
-First we look at the statistics from the swan inattentive and swan hyperactive variable. It shows the median score and its confidence interval For example, where the cumulative SDP is 1 for swan hyperactive we see the median is 12 with a narrow CI with a lower bound of 9 and upper bound of 13. We see that for the hyperactive variable that Cumulative SDP for 0 has a wider range between 4,1 with a median of 5 and cumulative score 3 has an even wider interval from 6 to 19 with a median of 15.The p-value for the comparison is 0.14, suggests that there is no statistically significant difference in the "swan_hyperactive" variable between the three SDP groups. For swan inattentive the p-value as well did not prove statistical significance  with a p-value of 0.2 and the different medians and confidence intervals can be seen in the summary table above.
 
-I then observed the Emotion Regulation Questionairre responses between the cumulative SDP and erq_exp did have a small p-value (0.081) but still proved not to be significant.Where the cumulative SDP is 1 for erq_exp we see the median is 3.25 with a narrow CI with a lower bound of the median value 3.25 and upper bound of 3.88. We see that for the erq_exp variable that Cumulative SDP for 0 has a wider range between 2,3 with a median of 2.5. The erq_cog had a higher p-value that proved not to be significant as well of 0.5.
+First, an examination of statistics from the "swan_inattentive" and "swan_hyperactive" variables revealed median scores and their confidence intervals. For instance, when the cumulative Smoke During Pregnancy (SDP) is 1 for "swan_hyperactive," the median is 12 with a narrow confidence interval (CI) ranging from 9 to 13. Contrarily, a cumulative SDP of 0 for the hyperactive variable has a wider range (4 to 15) with a median of 5, and cumulative score 3 exhibits an even broader interval (6 to 19) with a median of 15. The non-significant p-value of 0.14 suggests no statistically significant difference in the "swan_hyperactive" variable between the three SDP groups. Similarly, for "swan_inattentive," the p-value of 0.2 and the different medians and confidence intervals are detailed in the summary table above.
 
+Subsequently, an analysis of Emotion Regulation Questionnaire (ERQ) responses between cumulative SDP and "erq_exp" revealed a small p-value (0.081) that, nevertheless, proved to be non-significant. When cumulative SDP is 1 for "erq_exp," the median is 3.25 with a narrow CI ranging from the median value 3.25 to 3.88. Conversely, for the "erq_exp" variable, cumulative SDP of 0 displays a wider range (2 to 3) with a median of 2.5. The "erq_cog" variable had a higher p-value of 0.5, indicating non-significance.
 
-For the Brief Problem Monitor responses none of the variables showed significance with the Cumulative SDP but I do want to highlight the small p-value variables which are bpm_att and bpm_att_p. Bpm_int had the most missingness between all the variables and in the last table you will be able to see each of the confidence intervals broken down between the SDP cum scores and their confidence intervals. 
+In the context of Brief Problem Monitor (BPM) responses, none of the variables showed significance with cumulative SDP. However, noteworthy small p-values were observed for "bpm_att" and "bpm_att_p." It is important to highlight that "bpm_int" had the highest missingness among all variables, and the following table breaks down each confidence interval for SDP cumulative scores.
 
 ```{r}
 #stratified by cum PP
-tbl2_swan<- new_df[,c(32,33,80)] %>%
-  tbl_summary(by = cum_smoke_pp) %>%
-  add_p() %>%
-  sort_p() %>%
-  modify_caption("Compare Externalizing Swan factor score with PP") 
-as_kable_extra(tbl2_swan)%>% 
-  kable_styling(full_width=T, latex_options = c('HOLD_position'))
-
-
-tbl2_erq<- new_df[,c(73,74,80)] %>%
-  tbl_summary(by = cum_smoke_pp) %>%
-  add_p() %>%
-  sort_p() %>%
-  modify_caption("Compare Externalizing ERQ factors score with PP") 
-as_kable_extra(tbl2_erq)%>% 
-  kable_styling(full_width=T, latex_options = c('HOLD_position'))
-
-
-new_df %>% select(cum_smoke_pp, bpm_att, bpm_att_p, bpm_ext,
-
-bpm_ext_p, bpm_int, bpm_int_p) %>%
-
-tbl_summary( by = cum_smoke_pp, missing_text = "Missing",
-type = list (c(bpm_att, bpm_ext, bpm_int,
-bpm_att_p, bpm_ext_p, bpm_int_p) ~ "continuous",
-c(cum_smoke_pp) ~ "categorical"),
-statistic = all_continuous() ~ "{mean} ({sd})",
-digits = list(c(bpm_att, bpm_ext, bpm_int,
-bpm_att_p, bpm_ext_p, bpm_int_p) ~ c(2, 2))) %>%
-add_p(all_categorical () ~ "chisq.test", pvalue_fun = ~ style_pvalue(.x, digits = 2))
-```
-First we look at the statistics from the swan inattentive and swan hyperactive variable. It shows the median score and its confidence interval but this time we'll be evaluating these effects from the cumulative score from post-partum smoking.For swan inattentive  at cumulative score of 1 we see the median is 15 with a lower bound of 12 and upper bound of 17 We see that for the inattentive variable that Cumulative SPP for 0 has a range between 7and 12 with a median of 9 and cumulative score 2 has an even interval from 12 to 16 with a median of 14.The p-value is 0.083, suggests that there is no statistically significant difference in the "swan_inattentive" variable between the three SDP groups. For swan hyperactive the p-value as well did not prove statistical significance  with a p-value of 0.3 and the different medians and confidence intervals can be seen in the summary table above.
-
-I then observed the Emotion Regulation Questionairre responses between the cumulative SPP and erq_exp and exp_cog had the same p-value of 0.3 and which suggested no statistical significance.Where the cumulative SPP is 1 for erq_exp we see the median is 2.50 with a narrow CI with a lower bound of the median value 2.00 and upper bound of 2.50. We see that for the erq_cog variable that Cumulative SPP for 0 has a wider range between 2.75,3.71 with a median of 3.08. 
-
-
-For the Brief Problem Monitor responses only two  variables showed statistical significance which was bpm_ext_p with a p-value of 0.007 and bpm_int_p with a p-value of 0.043. With the Cumulative SPP I do want to highlight other the small but non-significant variables which are bpm_att and bpm_att_p.
-
-```{r}
-#stratified by average ETS
-tbl3_swan<- new_df[,c(32,33,79)] %>%
+tbl2_swan<- new_df[,c(32,33,82)] %>%
   tbl_summary(by = avg_smoke_follow) %>%
   add_p() %>%
   sort_p() %>%
   modify_caption("Compare Externalizing Swan factor score with ETS") 
-as_kable_extra(tbl3_swan)%>% 
+as_kable_extra(tbl2_swan)%>% 
   kable_styling(full_width=T, latex_options = c('HOLD_position'))
 
 
-tbl3_erq<- new_df[,c(73,74,79)] %>%
+tbl2_erq<- new_df[,c(73,74,82)] %>%
   tbl_summary(by = avg_smoke_follow) %>%
   add_p() %>%
   sort_p() %>%
   modify_caption("Compare Externalizing ERQ factors score with ETS") 
-as_kable_extra(tbl3_erq)%>% 
+as_kable_extra(tbl2_erq)%>% 
   kable_styling(full_width=T, latex_options = c('HOLD_position'))
 
 
@@ -411,44 +502,34 @@ digits = list(c(bpm_att, bpm_ext, bpm_int,
 bpm_att_p, bpm_ext_p, bpm_int_p) ~ c(2, 2))) %>%
 add_p(all_categorical () ~ "chisq.test", pvalue_fun = ~ style_pvalue(.x, digits = 2))
 ```
-First we look at the statistics from the swan inattentive and swan hyperactive variable. It shows the median score and its confidence interval but this time we'll be evaluating these effects from the average ETS score from follow-up .For swan inattentive at avergae score of 0.1 we see the median is 13 with a lower bound of 10 and upper bound of 15. We see that for the inattentive variable that average ETS for 0 has a range between 7 and 13 with a median of 9 and average score 0.9 has an interval of (4,4) with a median of 4 since there is only one person to analyze.The p-value is 0.067, suggests that there is no statistically significant difference in the "swan_inattentive" variable between the average scores. For swan hyperactive the p-value as well did not prove statistical significance  with a p-value of 0.2 and the different medians and confidence intervals can be seen in the summary table above.
+The analysis of the Externalizing Swan factor scores in relation to ETS characteristics reveals interesting patterns. For the "swan_hyperactive" variable, the median scores (with 95% confidence intervals) for different ETS characteristics are as follows: 7 (4, 12) for characteristic 1 (N = 25), 18 (18, 19) for characteristic 4 (N = 3), 15 (14, 15) for characteristic 5 (N = 2), and 4 (1, 6) for characteristic 6 (N = 6). The p-value of 0.011 suggests a statistically significant difference in the "swan_hyperactive" variable among the different PP characteristics. Notably, characteristic 4 exhibits the highest median score, indicating potential concerns in that subgroup. The "swan_inattentive" variable also displays significance, with median scores and confidence intervals of 9 (7, 13), 17 (16, 18), 18 (18, 19), and 11 (6, 12) for characteristics 1, 4, 5, and 6, respectively. The p-value of 0.038 highlights a statistically significant difference in "swan_inattentive" scores across the ETS characteristics. It's crucial to acknowledge the presence of unknown values (Unknown) in characteristic 1, which might impact the interpretation of results.
 
-I then observed the Emotion Regulation Questionairre responses between the average ETS follow-up scores and erq_exp and exp_cog have non-sginificant p-value both greater than 0.13.Where the average ETS score is 1 for erq_exp we see the median is 3.75 with a narrow CI with a lower bound of the median value 3.50 and upper bound of 4.00. We see that for the erq_cog variable that average ETS score for 0 has a wider range between 2.58,4.00 with a median of 3.17. 
+The examination of Externalizing Emotion Regulation Questionnaire (ERQ) factor scores in relation to Environmental Tobacco Smoke (ETS) characteristics reveals noteworthy findings. For the "erq_exp" variable, the median scores (with 95% confidence intervals) for different ETS characteristics are as follows: 2.50 (2.00, 3.00) for characteristic 1 (N = 25), 2.63 (2.56, 2.69) for characteristic 4 (N = 3), 3.13 (2.81, 3.44) for characteristic 5 (N = 2), and 3.75 (3.56, 3.94) for characteristic 6 (N = 6). Although the p-value is 0.054, suggesting a borderline significance, it's crucial to note the presence of unknown values in characteristics 1 and 4, which may influence the results. For the "erq_cog" variable, the median scores and confidence intervals are 3.33 (2.83, 4.00), 3.00 (3.00, 3.00), 3.42 (3.21, 3.63), and 3.50 (3.00, 3.83) for characteristics 1, 4, 5, and 6, respectively. The p-value of 0.7 indicates no statistically significant difference in "erq_cog" scores across the ETS characteristics. The presence of unknown values in characteristic 1 and 6 should be considered when interpreting these results.
 
-
-For the Brief Problem Monitor responses only none of the variables showed statistical significance but bpm_ext_p did also show statistical signifcance with a p-value of 0.054 .
-
-In conclusion  with the effects of SDP and ETS on the  externalizing,substance use,and self-regulation variables there were not too many significant relationships we got results from. And  a lot of these variables could be significant or on the cusp to reflect how smoking during pregnancy or exposure to tobacco smoke can have an effect on increasing substance use and poorer self-regulation if there was more data available and less missingess answering HYP1A and HYP1b. 
+For the Brief Problem Monitor responses only two variables showed statistical significance which was bpm_ext_p with a p-value of 0.007 and bpm_int_p with a p-value of 0.039. With the Cumulative ETS I do want to highlight other the small but non-significant variables which are bpm_att and bpm_att_p.
 
 
 ```{r}
-#Plots of Cotimean measurements
-cotimean_box<-boxplot(cotimean_34wk ~ mom_smoke_32wk,
-        data = new_df,
-        main = "Box Plot of Parent Cotinine Levels by Smoking status in 32 weeks",
-        xlab = "Smoking Status",
-        ylab = "Cotinine Level",
-        col = c("lightblue", "lightgreen", "lightpink"),
-        border = "blue")
-
 contimean_post<-plot(new_df$cotimean_pp6mo, new_df$cotimean_pp6mo_baby,
 xlab = "Parent cotinine level 6 months post partum",
 ylab = "Child cotinine level (6 mo. postpart.)")
 ```
-I wanted to look at the distribution of the contimean score between the mothers smoking status in her last trimester. We see that when answered Yes for their smoking status there is more of range and a higher average  which would be predicted since continine does measure and test screens for nictoine which is present in the yes. This shows that the mothers answered truthfully about their smoking status in the last trimester. The same can be said for no with its small to none range and the couple of outliers in which can be accounted for fi they smoked recently prior to the testing in this last trimester of pregnancy.
 
-The child continine levels at 6 months post-partum compared the mother's shows a high concentration at when the mother's measurement is 0 the child's is also 0. Even when the parents have high measurements of continine it is good to see that the tobacco screening is not reflected in child's urine meaning that it has not been passed onto the child. 
+To look at the distribution of the contimean score between the mothers smoking status in her last trimester. We see that when answered Yes for their smoking status there is more of range and a higher average which would be predicted since continine does measure and test screens for nictoine which is present in the yes. This shows that the mothers answered truthfully about their smoking status in the last trimester. The same can be said for no with its small to none range and the couple of outliers in which can be accounted for fi they smoked recently prior to the testing in this last trimester of pregnancy.
 
+The child continine levels at 6 months post-partum compared the mother's shows a high concentration at when the mother's measurement is 0 the child's is also 0. Even when the parents have high measurements of continine it is good to see that the tobacco screening is not reflected in child's urine meaning that it has not been passed onto the child.
 
-AIM 2: Explore links between self-regulation at baseline and substance and externalizing at 6- and 12-month follow-ups.
+## Conclusion
+The findings reveal a modest positive correlation between SDP and ETS, although the strength of this correlation is not particularly robust. This disparity may be attributed to the fact that prenatal smoke exposure is solely derived from the mother's smoking status, while postnatal smoke exposure integrates information from other individuals in the household. Furthermore, the prenatal data originates from the original study, whereas the postnatal data predominantly emanates from the current times. Notably, exposure to smoke during the early stages of development has been linked to a heightened prevalence of externalizing behaviors in children, including Attention-Deficit/Hyperactivity Disorder (ADHD), along with elevated rates of substance abuse problems. Through bivariate analysis, distinct stages of early smoke exposure exhibit associations with self-regulation, externalizing problems, and substance use, respectively.
 
-Aim 2 involves investigating the connections between self-regulation measured at the baseline and substance use as well as externalizing behavior at the 6- and 12-month follow-ups. Given that our dataset contains data exclusively from the baseline assessment, I want  to provide a overview of the baseline characteristics related to substance use, self-regulation, and externalizing behavior. Furthermore, I want to present a summary of these characteristics stratified by the cumulative (SDP) variable.
-
-
-AIM3: Identify self-regulation problems that mediate the link between SDP/ETS exposure and level of, and change in, SU and EXT severity over time.
+### Limitations
+With a limited sample size of 49 observations at baseline, the dataset exhibits a considerable number of missing values, particularly when scrutinizing specific variables that demand complete data. This small sample size poses a risk of biased and statistically insignificant results, given the potential impact of specific data records on analytical outcomes. Moreover, the dataset includes both self-reported and reflective data, contributing to data quality challenges. Additionally, our emphasis on analyzing univariate and bivariate relationships underscores the importance of acknowledging the limitations associated with unadjusted results, which can introduce bias and hinder comparability among diverse groups with varying levels of smoking exposure.
 
 
 \newpage
 
-```{r ref.label=labs,echo=TRUE,eval=FALSE}
+## Code Appendix
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE, include=TRUE}
+
 ```
